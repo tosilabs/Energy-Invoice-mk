@@ -1,0 +1,13 @@
+{
+  "domain": "energy_invoice_mk",
+  "name": "Energy Invoice MK (EVN)",
+  "version": "1.0.0",
+  "requirements": ["reportlab>=3.6.0"],
+  "dependencies": ["recorder"],
+  "after_dependencies": ["energy"],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "codeowners": [],
+  "documentation": "https://github.com/tosilabs/Energy-Invoice-mk",
+  "issue_tracker": "https://github.com/tosilabs/Energy-Invoice-mk/issues"
+}

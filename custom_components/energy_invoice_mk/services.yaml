@@ -1,0 +1,32 @@
+generate_invoice:
+  name: Generate EVN Invoice PDF
+  description: >
+    Generates a PDF invoice for the current or a specified billing period.
+    The file is saved to /config/www/invoices/ and accessible via HA media.
+  fields:
+    month:
+      name: Month
+      description: "Month number (1-12). Defaults to current month."
+      required: false
+      example: 4
+      selector:
+        number:
+          min: 1
+          max: 12
+          mode: box
+    year:
+      name: Year
+      description: "Year (e.g. 2026). Defaults to current year."
+      required: false
+      example: 2026
+      selector:
+        number:
+          min: 2020
+          max: 2100
+          mode: box
+
+reset_period:
+  name: Reset Billing Period
+  description: >
+    Resets the billing period snapshot to the current meter readings.
+    Use this if you manually reset your meter or need to realign the billing cycle.

@@ -1,0 +1,102 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energy Invoice MK - Податоци за потрошувач",
+        "description": "Поставете наплата за вашиот EVN Македонија струен бројило.",
+        "data": {
+          "consumer_name": "Ime na potrosuvacot",
+          "consumer_address": "Adresa",
+          "meter_number": "Broj na brojilo (opcionalno)"
+        },
+        "data_description": {
+          "consumer_name": "Vasheto ime kako shto se pojavuva na smetkata od EVN",
+          "consumer_address": "Adresa na instalacijata",
+          "meter_number": "Se naogja na brojiloto ili na smetkata od EVN"
+        }
+      },
+      "sensors": {
+        "title": "Senzori za energija",
+        "description": "Odberete gi senzoritе od Home Assistant Energy Dashboard koi gi sledат ochituvanjata na bro j iloto.",
+        "data": {
+          "vt_sensor": "VT (Visoka Tarifa) senzor za energija",
+          "nt_sensor": "NT (Niska Tarifa) senzor za energija"
+        },
+        "data_description": {
+          "vt_sensor": "Senzor koj gi sledi kWh potroseni vo vremenoto na visoka tarifa",
+          "nt_sensor": "Ostavete prazno ako imate ednотarifno brojilo."
+        }
+      },
+      "tariffs": {
+        "title": "Tarifi - EVN Makedonija",
+        "description": "Ceni od 01.01.2026 spored odlukata na RKE.",
+        "data": {
+          "vt_block1_rate": "VT Blok 1 (0-210 kWh) MKD/kWh",
+          "vt_block2_rate": "VT Blok 2 (211-630 kWh) MKD/kWh",
+          "vt_block3_rate": "VT Blok 3 (631-1050 kWh) MKD/kWh",
+          "vt_block4_rate": "VT Blok 4 (>1050 kWh) MKD/kWh",
+          "nt_rate": "NT (Niska Tarifa) MKD/kWh",
+          "td_rate": "Prenos + Distribucija MKD/kWh",
+          "network_access": "Pristap do mrezha MKD/mesec (fiksno)",
+          "vat_percent": "DDV %",
+          "municipal_tax": "Komunalna taksa MKD/mesec"
+        }
+      },
+      "billing": {
+        "title": "Period na naplatuvanje i notifikacii",
+        "data": {
+          "billing_start_day": "Den na pochetok na naplatniot period (1-28)",
+          "notify_on_period_end": "Isprati notifikacija na krajot na periodot",
+          "notify_service": "Servis za notifikacii (pr. notify.mobile_app)"
+        }
+      }
+    },
+    "error": {
+      "no_sensor_selected": "Ve molime odberete barem eden senzor za energija."
+    },
+    "abort": {
+      "already_configured": "Ova brojilo e veke konfigurirano."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Azhuriraj postavki",
+        "description": "Azhurirajte gi tarifite, senzoritе ili periodot na naplata.",
+        "data": {
+          "vt_sensor": "VT senzor za energija",
+          "nt_sensor": "NT senzor za energija",
+          "vt_block1_rate": "VT Blok 1 (0-210 kWh) MKD/kWh",
+          "vt_block2_rate": "VT Blok 2 (211-630 kWh) MKD/kWh",
+          "vt_block3_rate": "VT Blok 3 (631-1050 kWh) MKD/kWh",
+          "vt_block4_rate": "VT Blok 4 (>1050 kWh) MKD/kWh",
+          "nt_rate": "NT MKD/kWh",
+          "td_rate": "Prenos + Distribucija MKD/kWh",
+          "network_access": "Pristap do mrezha MKD/mesec",
+          "vat_percent": "DDV %",
+          "municipal_tax": "Komunalna taksa MKD/mesec",
+          "billing_start_day": "Den na pochetok na periodot",
+          "notify_on_period_end": "Isprati notifikacija na krajot na periodot",
+          "notify_service": "Servis za notifikacii"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "vt_consumption":             { "name": "VT Potrosuvachka (tekovен period)" },
+      "nt_consumption":             { "name": "NT Potrosuvachka (tekoven period)" },
+      "total_consumption":          { "name": "Vkupna Potrosuvachka (tekoven period)" },
+      "vt_cost":                    { "name": "Troshok VT Energija" },
+      "nt_cost":                    { "name": "Troshok NT Energija" },
+      "energy_cost":                { "name": "Troshok Energija (VT+NT)" },
+      "td_cost":                    { "name": "Troshok Prenos i Distribucija" },
+      "vat_amount":                 { "name": "DDV (18%)" },
+      "total_cost":                 { "name": "Vkupna Smetka (tekoven period)" },
+      "daily_average_cost":         { "name": "Dnevna Prosechna Smetka" },
+      "estimated_monthly":          { "name": "Prochena Mesechna Smetka" },
+      "previous_month_cost":        { "name": "Smetka Minatiot Mesec" },
+      "previous_month_consumption": { "name": "Potrosuvachka Minatiot Mesec" }
+    }
+  }
+}

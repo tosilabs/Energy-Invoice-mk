@@ -1,0 +1,102 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energy Invoice MK - Consumer Info",
+        "description": "Set up billing for your EVN Macedonia electricity meter.",
+        "data": {
+          "consumer_name": "Consumer name",
+          "consumer_address": "Address",
+          "meter_number": "Meter number (optional)"
+        },
+        "data_description": {
+          "consumer_name": "Your name as it appears on the EVN bill",
+          "consumer_address": "Installation address",
+          "meter_number": "Found on your meter or EVN bill"
+        }
+      },
+      "sensors": {
+        "title": "Energy Sensors",
+        "description": "Select the Home Assistant energy sensors that track your meter readings.",
+        "data": {
+          "vt_sensor": "VT (High Tariff) energy sensor",
+          "nt_sensor": "NT (Low Tariff) energy sensor"
+        },
+        "data_description": {
+          "vt_sensor": "Sensor tracking kWh consumed during high-tariff hours (peak)",
+          "nt_sensor": "Leave empty for single-tariff meters."
+        }
+      },
+      "tariffs": {
+        "title": "Tariff Rates - EVN Macedonia",
+        "description": "Rates from 01.01.2026 per ERC decision.",
+        "data": {
+          "vt_block1_rate": "VT Block 1 rate (0-210 kWh) MKD/kWh",
+          "vt_block2_rate": "VT Block 2 rate (211-630 kWh) MKD/kWh",
+          "vt_block3_rate": "VT Block 3 rate (631-1050 kWh) MKD/kWh",
+          "vt_block4_rate": "VT Block 4 rate (>1050 kWh) MKD/kWh",
+          "nt_rate": "NT (Low Tariff) rate MKD/kWh",
+          "td_rate": "Transmission + Distribution rate MKD/kWh",
+          "network_access": "Network access fee MKD/month (fixed)",
+          "vat_percent": "VAT / DDV %",
+          "municipal_tax": "Municipal tax MKD/month"
+        }
+      },
+      "billing": {
+        "title": "Billing Period & Notifications",
+        "data": {
+          "billing_start_day": "Billing cycle start day (1-28)",
+          "notify_on_period_end": "Send notification at period end",
+          "notify_service": "Notification service (e.g. notify.mobile_app)"
+        }
+      }
+    },
+    "error": {
+      "no_sensor_selected": "Please select at least one energy sensor."
+    },
+    "abort": {
+      "already_configured": "This meter is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update Settings",
+        "description": "Update tariff rates, sensors, or billing period.",
+        "data": {
+          "vt_sensor": "VT energy sensor",
+          "nt_sensor": "NT energy sensor",
+          "vt_block1_rate": "VT Block 1 rate (0-210 kWh) MKD/kWh",
+          "vt_block2_rate": "VT Block 2 rate (211-630 kWh) MKD/kWh",
+          "vt_block3_rate": "VT Block 3 rate (631-1050 kWh) MKD/kWh",
+          "vt_block4_rate": "VT Block 4 rate (>1050 kWh) MKD/kWh",
+          "nt_rate": "NT rate MKD/kWh",
+          "td_rate": "Transmission + Distribution rate MKD/kWh",
+          "network_access": "Network access fee MKD/month",
+          "vat_percent": "VAT / DDV %",
+          "municipal_tax": "Municipal tax MKD/month",
+          "billing_start_day": "Billing cycle start day",
+          "notify_on_period_end": "Send notification at period end",
+          "notify_service": "Notification service"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "vt_consumption":             { "name": "VT Consumption (current period)" },
+      "nt_consumption":             { "name": "NT Consumption (current period)" },
+      "total_consumption":          { "name": "Total Consumption (current period)" },
+      "vt_cost":                    { "name": "VT Energy Cost" },
+      "nt_cost":                    { "name": "NT Energy Cost" },
+      "energy_cost":                { "name": "Energy Cost (VT+NT)" },
+      "td_cost":                    { "name": "Transmission & Distribution Cost" },
+      "vat_amount":                 { "name": "VAT (DDV 18%)" },
+      "total_cost":                 { "name": "Total Bill (current period)" },
+      "daily_average_cost":         { "name": "Daily Average Cost" },
+      "estimated_monthly":          { "name": "Estimated Monthly Bill" },
+      "previous_month_cost":        { "name": "Previous Month Bill" },
+      "previous_month_consumption": { "name": "Previous Month Consumption" }
+    }
+  }
+}
