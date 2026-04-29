@@ -44,10 +44,16 @@
       },
       "billing": {
         "title": "Period na naplatuvanje i notifikacii",
+        "description": "Vnesete gi datumite od vashata posledna EVN smetka. Integracijata avtomatski go presmetuva tekoven naplatен period.",
         "data": {
-          "billing_start_day": "Den na pochetok na naplatniot period (1-28)",
+          "last_invoice_start": "Pochетok na poslednata smetka",
+          "last_invoice_end": "Kraj na poslednata smetka",
           "notify_on_period_end": "Isprati notifikacija na krajot na periodot",
           "notify_service": "Servis za notifikacii (pr. notify.mobile_app)"
+        },
+        "data_description": {
+          "last_invoice_start": "Prviot den od vashata posledna hartija/PDF smetka",
+          "last_invoice_end": "Posledniot den od vashata posledna hartija/PDF smetka"
         }
       }
     },
@@ -75,7 +81,8 @@
           "network_access": "Pristap do mrezha MKD/mesec",
           "vat_percent": "DDV %",
           "municipal_tax": "Komunalna taksa MKD/mesec",
-          "billing_start_day": "Den na pochetok na periodot",
+          "last_invoice_start": "Pochеток na poslednata smetka",
+          "last_invoice_end": "Kraj na poslednata smetka",
           "notify_on_period_end": "Isprati notifikacija na krajot na periodot",
           "notify_service": "Servis za notifikacii"
         }

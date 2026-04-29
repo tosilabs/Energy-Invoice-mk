@@ -44,10 +44,16 @@
       },
       "billing": {
         "title": "Billing Period & Notifications",
+        "description": "Enter the start and end dates from your last EVN invoice. The integration uses these to automatically calculate your current billing period.",
         "data": {
-          "billing_start_day": "Billing cycle start day (1-28)",
+          "last_invoice_start": "Last invoice start date",
+          "last_invoice_end": "Last invoice end date",
           "notify_on_period_end": "Send notification at period end",
           "notify_service": "Notification service (e.g. notify.mobile_app)"
+        },
+        "data_description": {
+          "last_invoice_start": "The first day shown on your last paper/PDF invoice",
+          "last_invoice_end": "The last day shown on your last paper/PDF invoice"
         }
       }
     },
@@ -75,7 +81,8 @@
           "network_access": "Network access fee MKD/month",
           "vat_percent": "VAT / DDV %",
           "municipal_tax": "Municipal tax MKD/month",
-          "billing_start_day": "Billing cycle start day",
+          "last_invoice_start": "Last invoice start date",
+          "last_invoice_end": "Last invoice end date",
           "notify_on_period_end": "Send notification at period end",
           "notify_service": "Notification service"
         }
