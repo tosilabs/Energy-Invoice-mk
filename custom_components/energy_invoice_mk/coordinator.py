@@ -12,9 +12,10 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
-    CONF_BILLING_DAY,
     CONF_CONSUMER_ADDRESS,
     CONF_CONSUMER_NAME,
+    CONF_LAST_INVOICE_END,
+    CONF_LAST_INVOICE_START,
     CONF_METER_NUMBER,
     CONF_MUNICIPAL_TAX,
     CONF_NETWORK_ACCESS,
@@ -45,6 +46,7 @@ from .const import (
     DATA_SUBTOTAL,
     DATA_TD_COST,
     DATA_TOTAL_CONSUMPTION,
+    DATA_PERIOD_END,
     DATA_TOTAL_COST,
     DATA_TOTAL_WITH_VAT,
     DATA_VAT_AMOUNT,
@@ -58,7 +60,6 @@ from .const import (
     DATA_VT_BLOCK4_KWH,
     DATA_VT_CONSUMPTION,
     DATA_VT_COST,
-    DEFAULT_BILLING_DAY,
     DEFAULT_MUNICIPAL_TAX,
     DEFAULT_NETWORK_ACCESS,
     DEFAULT_NT_RATE,
@@ -233,17 +234,39 @@ class EnergyInvoiceCoordinator(DataUpdateCoordinator):
         except (ValueError, TypeError):
             return None
 
-    def _get_billing_period_start(self) -> date:
-        billing_day = int(self._get_cfg(CONF_BILLING_DAY, DEFAULT_BILLING_DAY))
+    def _get_billing_period(self) -> tuple[date, date]:
+        """
+        Calculate current billing period start and end dates based on the
+        last invoice dates provided during setup.
+
+        Logic:
+          - period_days = last_invoice_end - last_invoice_start + 1
+          - current period starts the day after last_invoice_end
+          - advance by period_days until current_start + period_days > today
+          - period_end = current_start + period_days - 1
+        """
+        last_start_str = self._get_cfg(CONF_LAST_INVOICE_START)
+        last_end_str = self._get_cfg(CONF_LAST_INVOICE_END)
+
         today = date.today()
-        if today.day >= billing_day:
-            return date(today.year, today.month, billing_day)
-        first_of_month = date(today.year, today.month, 1)
-        prev_month_last = first_of_month - timedelta(days=1)
-        try:
-            return date(prev_month_last.year, prev_month_last.month, billing_day)
-        except ValueError:
-            return date(prev_month_last.year, prev_month_last.month, prev_month_last.day)
+
+        # Fallback: if dates not configured, use today as start
+        if not last_start_str or not last_end_str:
+            return today, today + timedelta(days=29)
+
+        last_start = date.fromisoformat(last_start_str)
+        last_end = date.fromisoformat(last_end_str)
+        period_days = (last_end - last_start).days + 1  # e.g. 30
+
+        # Current period starts the day after the last invoice ended
+        current_start = last_end + timedelta(days=1)
+
+        # Advance by full periods until the next start would be in the future
+        while current_start + timedelta(days=period_days) <= today:
+            current_start += timedelta(days=period_days)
+
+        current_end = current_start + timedelta(days=period_days - 1)
+        return current_start, current_end
 
     def _get_cfg(self, key: str, default: Any = None) -> Any:
         return self.entry.options.get(key, self.entry.data.get(key, default))
@@ -268,7 +291,7 @@ class EnergyInvoiceCoordinator(DataUpdateCoordinator):
         if current_nt is None:
             current_nt = 0.0
 
-        period_start = self._get_billing_period_start()
+        period_start, period_end = self._get_billing_period()
         period_start_str = period_start.isoformat()
 
         stored_period_start = self._stored_data.get(DATA_PERIOD_START)
@@ -335,6 +358,7 @@ class EnergyInvoiceCoordinator(DataUpdateCoordinator):
             DATA_PREVIOUS_MONTH_COST: round(float(self._stored_data.get(DATA_PREVIOUS_MONTH_COST, 0.0)), 2),
             DATA_PREVIOUS_MONTH_CONSUMPTION: round(float(self._stored_data.get(DATA_PREVIOUS_MONTH_CONSUMPTION, 0.0)), 3),
             DATA_PERIOD_START: period_start_str,
+            DATA_PERIOD_END: period_end.isoformat(),
             "vt_block1_rate": vt_block1,
             "vt_block2_rate": vt_block2,
             "vt_block3_rate": vt_block3,
