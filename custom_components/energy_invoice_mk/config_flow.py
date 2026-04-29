@@ -47,7 +47,9 @@ def _energy_sensor_selector() -> selector.EntitySelector:
     )
 
 
-def _number(min_val: float, max_val: float, step: float = 0.0001) -> selector.NumberSelector:
+def _number(min_val: float, max_val: float, step: float | str = "any") -> selector.NumberSelector:
+    # HA requires step >= 0.001 for float steps; use "any" for tariff rates
+    # that need 4-decimal precision (e.g. 4.7074 MKD/kWh).
     return selector.NumberSelector(
         selector.NumberSelectorConfig(
             min=min_val,
