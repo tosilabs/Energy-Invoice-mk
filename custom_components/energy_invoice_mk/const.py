@@ -37,14 +37,22 @@ DEFAULT_VAT_PERCENT = 18.0  # % (NOTE: 18%, NOT 5%)
 # Municipal tax (Комунална такса) - applied AFTER VAT, outside VAT base
 DEFAULT_MUNICIPAL_TAX = 184.0  # MKD/month (flat, outside VAT)
 
-# Billing period default
-DEFAULT_BILLING_DAY = 1
+# ===========================================================================
+# Configuration keys - new architecture (v2)
+# ===========================================================================
+CONF_PEAK_ENTITY = "peak_entity"        # Accumulative lifetime VT kWh sensor
+CONF_OFFPEAK_ENTITY = "offpeak_entity"  # Accumulative lifetime NT kWh sensor
+CONF_PERIOD_START_DATE = "period_start_date"   # ISO date when current period started
+CONF_SNAPSHOT_PEAK = "snapshot_peak"           # VT reading at period start
+CONF_SNAPSHOT_OFFPEAK = "snapshot_offpeak"     # NT reading at period start
 
-# ===========================================================================
-# Configuration keys
-# ===========================================================================
+# Kept for migration from v1
 CONF_VT_SENSOR = "vt_sensor"
 CONF_NT_SENSOR = "nt_sensor"
+CONF_LAST_INVOICE_START = "last_invoice_start"
+CONF_LAST_INVOICE_END = "last_invoice_end"
+
+# Tariff config keys (unchanged)
 CONF_VT_BLOCK1_RATE = "vt_block1_rate"
 CONF_VT_BLOCK2_RATE = "vt_block2_rate"
 CONF_VT_BLOCK3_RATE = "vt_block3_rate"
@@ -54,8 +62,6 @@ CONF_TD_RATE = "td_rate"
 CONF_NETWORK_ACCESS = "network_access"
 CONF_VAT_PERCENT = "vat_percent"
 CONF_MUNICIPAL_TAX = "municipal_tax"
-CONF_LAST_INVOICE_START = "last_invoice_start"  # ISO date: e.g. "2026-03-15"
-CONF_LAST_INVOICE_END = "last_invoice_end"      # ISO date: e.g. "2026-04-14"
 CONF_METER_NUMBER = "meter_number"
 CONF_CONSUMER_NAME = "consumer_name"
 CONF_CONSUMER_ADDRESS = "consumer_address"
@@ -97,8 +103,19 @@ DATA_PREVIOUS_MONTH_COST = "previous_month_cost"
 DATA_PREVIOUS_MONTH_CONSUMPTION = "previous_month_consumption"
 DATA_PERIOD_START = "period_start"
 DATA_PERIOD_END = "period_end"
+
+# Historical helper sensor data keys
+DATA_LAST_30_DAYS_CONSUMPTION = "last_30_days_consumption"
+DATA_LAST_30_DAYS_COST = "last_30_days_cost"
+DATA_PREVIOUS_PERIOD_CONSUMPTION = "previous_period_consumption"
+DATA_PREVIOUS_PERIOD_COST = "previous_period_cost"
+DATA_THIS_YEAR_CONSUMPTION = "this_year_consumption"
+DATA_THIS_YEAR_COST = "this_year_cost"
+
+# Storage keys (internal, kept for migration)
 DATA_PERIOD_START_VT = "period_start_vt"
 DATA_PERIOD_START_NT = "period_start_nt"
+DATA_PERIOD_HISTORY = "period_history"
 
 # ===========================================================================
 # Storage and output
