@@ -2,10 +2,10 @@
   "config": {
     "step": {
       "user": {
-        "title": "Energy Invoice MK - Податоци за потрошувач",
-        "description": "Поставете наплата за вашиот EVN Македонија струен бројило.",
+        "title": "Energy Invoice MK - Podatoci za potrosuvach",
+        "description": "Postavete naplatuvanje za vasheto EVN Makedonija elektrichno brojilo.",
         "data": {
-          "consumer_name": "Ime na potrosuvacot",
+          "consumer_name": "Ime na potrosuvachot",
           "consumer_address": "Adresa",
           "meter_number": "Broj na brojilo (opcionalno)"
         },
@@ -17,14 +17,14 @@
       },
       "sensors": {
         "title": "Senzori za energija",
-        "description": "Odberete gi senzoritе od Home Assistant Energy Dashboard koi gi sledат ochituvanjata na bro j iloto.",
+        "description": "Odberete **akumulativni (dozhivotni) kWh senzori** — senzori koi brоjat nagorе i nikogash ne se resetiraat. NE koristete utility_meter mesechni senzori.",
         "data": {
-          "vt_sensor": "VT (Visoka Tarifa) senzor za energija",
-          "nt_sensor": "NT (Niska Tarifa) senzor za energija"
+          "peak_entity": "Visoka tarifa (VT) akumulativen senzor",
+          "offpeak_entity": "Niska tarifa (NT) akumulativen senzor"
         },
         "data_description": {
-          "vt_sensor": "Senzor koj gi sledi kWh potroseni vo vremenoto na visoka tarifa",
-          "nt_sensor": "Ostavete prazno ako imate ednотarifno brojilo."
+          "peak_entity": "Dozivoten kWh broach za VT chаsovi — nikogash ne se resetira",
+          "offpeak_entity": "Dozivoten kWh broach za NT chаsovi — nikogash ne se resetira. Ostavete prazno za ednотarifno brojilo."
         }
       },
       "tariffs": {
@@ -44,16 +44,14 @@
       },
       "billing": {
         "title": "Period na naplatuvanje i notifikacii",
-        "description": "Vnesete gi datumite od vashata posledna EVN smetka. Integracijata avtomatski go presmetuva tekoven naplatен period.",
+        "description": "Vnesete ja pochetochna data na **tekoven** naplatuvachki period (od vashata posledna EVN smetka). Vo ovoj chekоr se snimaat tekоvnite ochituvanja.",
         "data": {
-          "last_invoice_start": "Pochетok na poslednata smetka",
-          "last_invoice_end": "Kraj na poslednata smetka",
-          "notify_on_period_end": "Isprati notifikacija na krajot na periodot",
+          "period_start_date": "Pochetna data na tekoven period",
+          "notify_on_period_end": "Isprati notifikacija pri promena na periоd",
           "notify_service": "Servis za notifikacii (pr. notify.mobile_app)"
         },
         "data_description": {
-          "last_invoice_start": "Prviot den od vashata posledna hartija/PDF smetka",
-          "last_invoice_end": "Posledniot den od vashata posledna hartija/PDF smetka"
+          "period_start_date": "Prviot den od periodot na vashata posledna EVN smetka"
         }
       }
     },
@@ -68,10 +66,11 @@
     "step": {
       "init": {
         "title": "Azhuriraj postavki",
-        "description": "Azhurirajte gi tarifite, senzoritе ili periodot na naplata.",
+        "description": "Azhurirajte gi tarifite, senzoritе ili pochetokot na naplatniot period.",
         "data": {
-          "vt_sensor": "VT senzor za energija",
-          "nt_sensor": "NT senzor za energija",
+          "peak_entity": "VT akumulativen senzor",
+          "offpeak_entity": "NT akumulativen senzor",
+          "period_start_date": "Pochetna data na tekoven period",
           "vt_block1_rate": "VT Blok 1 (0-210 kWh) MKD/kWh",
           "vt_block2_rate": "VT Blok 2 (211-630 kWh) MKD/kWh",
           "vt_block3_rate": "VT Blok 3 (631-1050 kWh) MKD/kWh",
@@ -81,9 +80,7 @@
           "network_access": "Pristap do mrezha MKD/mesec",
           "vat_percent": "DDV %",
           "municipal_tax": "Komunalna taksa MKD/mesec",
-          "last_invoice_start": "Pochеток na poslednata smetka",
-          "last_invoice_end": "Kraj na poslednata smetka",
-          "notify_on_period_end": "Isprati notifikacija na krajot na periodot",
+          "notify_on_period_end": "Isprati notifikacija pri promena na period",
           "notify_service": "Servis za notifikacii"
         }
       }
@@ -91,19 +88,25 @@
   },
   "entity": {
     "sensor": {
-      "vt_consumption":             { "name": "VT Potrosuvachka (tekovен period)" },
-      "nt_consumption":             { "name": "NT Potrosuvachka (tekoven period)" },
-      "total_consumption":          { "name": "Vkupna Potrosuvachka (tekoven period)" },
-      "vt_cost":                    { "name": "Troshok VT Energija" },
-      "nt_cost":                    { "name": "Troshok NT Energija" },
-      "energy_cost":                { "name": "Troshok Energija (VT+NT)" },
-      "td_cost":                    { "name": "Troshok Prenos i Distribucija" },
-      "vat_amount":                 { "name": "DDV (18%)" },
-      "total_cost":                 { "name": "Vkupna Smetka (tekoven period)" },
-      "daily_average_cost":         { "name": "Dnevna Prosechna Smetka" },
-      "estimated_monthly":          { "name": "Prochena Mesechna Smetka" },
-      "previous_month_cost":        { "name": "Smetka Minatiot Mesec" },
-      "previous_month_consumption": { "name": "Potrosuvachka Minatiot Mesec" }
+      "vt_consumption":              { "name": "VT Potrosuvachka (tekoven period)" },
+      "nt_consumption":              { "name": "NT Potrosuvachka (tekoven period)" },
+      "total_consumption":           { "name": "Vkupna Potrosuvachka (tekoven period)" },
+      "vt_cost":                     { "name": "Troshok VT Energija" },
+      "nt_cost":                     { "name": "Troshok NT Energija" },
+      "energy_cost":                 { "name": "Troshok Energija (VT+NT)" },
+      "td_cost":                     { "name": "Troshok Prenos i Distribucija" },
+      "vat_amount":                  { "name": "DDV (18%)" },
+      "total_cost":                  { "name": "Vkupna Smetka (tekoven period)" },
+      "daily_average_cost":          { "name": "Dnevna Prosechna Smetka" },
+      "estimated_monthly":           { "name": "Prochena Mesechna Smetka" },
+      "previous_month_cost":         { "name": "Smetka Minatiot Mesec" },
+      "previous_month_consumption":  { "name": "Potrosuvachka Minatiot Mesec" },
+      "last_30_days_consumption":    { "name": "Potrosuvachka Poslednite 30 Dena" },
+      "last_30_days_cost":           { "name": "Smetka Poslednite 30 Dena" },
+      "previous_period_consumption": { "name": "Potrosuvachka Prethoodniot Period" },
+      "previous_period_cost":        { "name": "Smetka Prethoodniot Period" },
+      "this_year_consumption":       { "name": "Potrosuvachka Ovaa Godina" },
+      "this_year_cost":              { "name": "Smetka Ovaa Godina" }
     }
   }
 }

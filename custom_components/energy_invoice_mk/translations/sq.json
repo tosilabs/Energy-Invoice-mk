@@ -1,0 +1,112 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energy Invoice MK - Të dhënat e konsumatorit",
+        "description": "Konfiguro faturimin për matësin tënd EVN Maqedoni.",
+        "data": {
+          "consumer_name": "Emri i konsumatorit",
+          "consumer_address": "Adresa",
+          "meter_number": "Numri i matësit (opsional)"
+        },
+        "data_description": {
+          "consumer_name": "Emri juaj siç shfaqet në faturën EVN",
+          "consumer_address": "Adresa e instalimit",
+          "meter_number": "Gjendet në matës ose në faturën EVN"
+        }
+      },
+      "sensors": {
+        "title": "Sensorët e energjisë",
+        "description": "Zgjidh **sensorët akumulativë (gjatë gjithë jetës) kWh** — sensorë që numërojnë lart dhe nuk resetohen kurrë. MOS përdor sensorë utility_meter mujorë.",
+        "data": {
+          "peak_entity": "Senzori akumulativ VT (Tarifa e Lartë)",
+          "offpeak_entity": "Senzori akumulativ NT (Tarifa e Ulët)"
+        },
+        "data_description": {
+          "peak_entity": "Counter kWh gjatësi-jetës për orët VT — nuk resetohet kurrë",
+          "offpeak_entity": "Counter kWh gjatësi-jetës për orët NT — nuk resetohet kurrë. Lër bosh për matës me tarifë të vetme."
+        }
+      },
+      "tariffs": {
+        "title": "Tarifat - EVN Maqedoni",
+        "description": "Çmimet nga 01.01.2026 sipas vendimit të ERC.",
+        "data": {
+          "vt_block1_rate": "VT Blloku 1 (0-210 kWh) MKD/kWh",
+          "vt_block2_rate": "VT Blloku 2 (211-630 kWh) MKD/kWh",
+          "vt_block3_rate": "VT Blloku 3 (631-1050 kWh) MKD/kWh",
+          "vt_block4_rate": "VT Blloku 4 (>1050 kWh) MKD/kWh",
+          "nt_rate": "NT (Tarifa e Ulët) MKD/kWh",
+          "td_rate": "Transmetim + Shpërndarje MKD/kWh",
+          "network_access": "Tarifa fikse e aksesit në rrjet MKD/muaj",
+          "vat_percent": "TVSH / DDV %",
+          "municipal_tax": "Taksa komunale MKD/muaj"
+        }
+      },
+      "billing": {
+        "title": "Periudha e faturimit dhe njoftime",
+        "description": "Vendos datën e fillimit të periudhës **aktuale** të faturimit (nga fatura juaj e fundit EVN). Në këtë hap ruhet një snapshot i leximeve aktuale.",
+        "data": {
+          "period_start_date": "Data e fillimit të periudhës aktuale",
+          "notify_on_period_end": "Dërgo njoftim kur ndryshon periudha",
+          "notify_service": "Shërbimi i njoftimeve (p.sh. notify.mobile_app)"
+        },
+        "data_description": {
+          "period_start_date": "Dita e parë e periudhës në faturën tuaj të fundit EVN"
+        }
+      }
+    },
+    "error": {
+      "no_sensor_selected": "Ju lutem zgjidhni të paktën një sensor energjie."
+    },
+    "abort": {
+      "already_configured": "Ky matës është tashmë i konfiguruar."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Përditëso cilësimet",
+        "description": "Përditëso tarifat, sensorët ose fillimin e periudhës.",
+        "data": {
+          "peak_entity": "Sensori akumulativ VT",
+          "offpeak_entity": "Sensori akumulativ NT",
+          "period_start_date": "Data e fillimit të periudhës aktuale",
+          "vt_block1_rate": "VT Blloku 1 (0-210 kWh) MKD/kWh",
+          "vt_block2_rate": "VT Blloku 2 (211-630 kWh) MKD/kWh",
+          "vt_block3_rate": "VT Blloku 3 (631-1050 kWh) MKD/kWh",
+          "vt_block4_rate": "VT Blloku 4 (>1050 kWh) MKD/kWh",
+          "nt_rate": "NT MKD/kWh",
+          "td_rate": "Transmetim + Shpërndarje MKD/kWh",
+          "network_access": "Akses në rrjet MKD/muaj",
+          "vat_percent": "TVSH %",
+          "municipal_tax": "Taksa komunale MKD/muaj",
+          "notify_on_period_end": "Dërgo njoftim kur ndryshon periudha",
+          "notify_service": "Shërbimi i njoftimeve"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "vt_consumption":              { "name": "Konsum VT (periudha aktuale)" },
+      "nt_consumption":              { "name": "Konsum NT (periudha aktuale)" },
+      "total_consumption":           { "name": "Konsum Total (periudha aktuale)" },
+      "vt_cost":                     { "name": "Kosto Energjia VT" },
+      "nt_cost":                     { "name": "Kosto Energjia NT" },
+      "energy_cost":                 { "name": "Kosto Energjia (VT+NT)" },
+      "td_cost":                     { "name": "Kosto Transmetim dhe Shpërndarje" },
+      "vat_amount":                  { "name": "TVSH (18%)" },
+      "total_cost":                  { "name": "Fatura Totale (periudha aktuale)" },
+      "daily_average_cost":          { "name": "Mesatarja Ditore" },
+      "estimated_monthly":           { "name": "Fatura e Vlerësuar Mujore" },
+      "previous_month_cost":         { "name": "Fatura Muajit të Kaluar" },
+      "previous_month_consumption":  { "name": "Konsum Muajit të Kaluar" },
+      "last_30_days_consumption":    { "name": "Konsum 30 Ditët e Fundit" },
+      "last_30_days_cost":           { "name": "Kosto 30 Ditët e Fundit" },
+      "previous_period_consumption": { "name": "Konsum Periudhës së Mëparshme" },
+      "previous_period_cost":        { "name": "Kosto Periudhës së Mëparshme" },
+      "this_year_consumption":       { "name": "Konsum Këtë Vit" },
+      "this_year_cost":              { "name": "Kosto Këtë Vit" }
+    }
+  }
+}

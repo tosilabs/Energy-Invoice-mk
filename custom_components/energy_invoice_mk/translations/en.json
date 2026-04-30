@@ -17,19 +17,19 @@
       },
       "sensors": {
         "title": "Energy Sensors",
-        "description": "Select the Home Assistant energy sensors that track your meter readings.",
+        "description": "Select the **accumulative (lifetime) kWh sensors** — sensors that count upward and never reset. Do NOT use utility_meter monthly sensors.",
         "data": {
-          "vt_sensor": "VT (High Tariff) energy sensor",
-          "nt_sensor": "NT (Low Tariff) energy sensor"
+          "peak_entity": "Peak (VT / High Tariff) accumulative sensor",
+          "offpeak_entity": "Off-peak (NT / Low Tariff) accumulative sensor"
         },
         "data_description": {
-          "vt_sensor": "Sensor tracking kWh consumed during high-tariff hours (peak)",
-          "nt_sensor": "Leave empty for single-tariff meters."
+          "peak_entity": "Lifetime kWh counter for high-tariff hours — never resets",
+          "offpeak_entity": "Lifetime kWh counter for low-tariff hours — never resets. Leave empty for single-tariff meters."
         }
       },
       "tariffs": {
         "title": "Tariff Rates - EVN Macedonia",
-        "description": "Rates from 01.01.2026 per ERC decision.",
+        "description": "Rates from 01.01.2026 per ERC decision. Update via Options if rates change.",
         "data": {
           "vt_block1_rate": "VT Block 1 rate (0-210 kWh) MKD/kWh",
           "vt_block2_rate": "VT Block 2 rate (211-630 kWh) MKD/kWh",
@@ -44,16 +44,14 @@
       },
       "billing": {
         "title": "Billing Period & Notifications",
-        "description": "Enter the start and end dates from your last EVN invoice. The integration uses these to automatically calculate your current billing period.",
+        "description": "Enter the start date of your **current** billing period (from your last EVN invoice). A snapshot of current meter readings is captured at this step.",
         "data": {
-          "last_invoice_start": "Last invoice start date",
-          "last_invoice_end": "Last invoice end date",
-          "notify_on_period_end": "Send notification at period end",
+          "period_start_date": "Current billing period start date",
+          "notify_on_period_end": "Send notification when period changes",
           "notify_service": "Notification service (e.g. notify.mobile_app)"
         },
         "data_description": {
-          "last_invoice_start": "The first day shown on your last paper/PDF invoice",
-          "last_invoice_end": "The last day shown on your last paper/PDF invoice"
+          "period_start_date": "First day of the period shown on your latest EVN invoice"
         }
       }
     },
@@ -68,10 +66,11 @@
     "step": {
       "init": {
         "title": "Update Settings",
-        "description": "Update tariff rates, sensors, or billing period.",
+        "description": "Update tariff rates, sensors, or billing period start. Changes take effect immediately.",
         "data": {
-          "vt_sensor": "VT energy sensor",
-          "nt_sensor": "NT energy sensor",
+          "peak_entity": "Peak (VT) accumulative sensor",
+          "offpeak_entity": "Off-peak (NT) accumulative sensor",
+          "period_start_date": "Current billing period start date",
           "vt_block1_rate": "VT Block 1 rate (0-210 kWh) MKD/kWh",
           "vt_block2_rate": "VT Block 2 rate (211-630 kWh) MKD/kWh",
           "vt_block3_rate": "VT Block 3 rate (631-1050 kWh) MKD/kWh",
@@ -81,9 +80,7 @@
           "network_access": "Network access fee MKD/month",
           "vat_percent": "VAT / DDV %",
           "municipal_tax": "Municipal tax MKD/month",
-          "last_invoice_start": "Last invoice start date",
-          "last_invoice_end": "Last invoice end date",
-          "notify_on_period_end": "Send notification at period end",
+          "notify_on_period_end": "Send notification when period changes",
           "notify_service": "Notification service"
         }
       }
@@ -103,7 +100,13 @@
       "daily_average_cost":         { "name": "Daily Average Cost" },
       "estimated_monthly":          { "name": "Estimated Monthly Bill" },
       "previous_month_cost":        { "name": "Previous Month Bill" },
-      "previous_month_consumption": { "name": "Previous Month Consumption" }
+      "previous_month_consumption": { "name": "Previous Month Consumption" },
+      "last_30_days_consumption":   { "name": "Last 30 Days Consumption" },
+      "last_30_days_cost":          { "name": "Last 30 Days Cost" },
+      "previous_period_consumption":{ "name": "Previous Billing Period Consumption" },
+      "previous_period_cost":       { "name": "Previous Billing Period Cost" },
+      "this_year_consumption":      { "name": "This Year Consumption" },
+      "this_year_cost":             { "name": "This Year Cost" }
     }
   }
 }
