@@ -1,12 +1,12 @@
 generate_invoice:
   name: Generate EVN Invoice PDF
   description: >
-    Generates a PDF invoice for the current or a specified billing period.
-    The file is saved to /config/www/invoices/ and accessible via HA media.
+    Generates a PDF invoice for the current billing period.
+    Saved to /config/www/invoices/energy_invoice_YYYY_MM.pdf.
   fields:
     month:
       name: Month
-      description: "Month number (1-12). Defaults to current month."
+      description: "Month (1-12). Defaults to current month."
       required: false
       example: 4
       selector:
@@ -16,7 +16,7 @@ generate_invoice:
           mode: box
     year:
       name: Year
-      description: "Year (e.g. 2026). Defaults to current year."
+      description: "Year. Defaults to current year."
       required: false
       example: 2026
       selector:
@@ -28,5 +28,42 @@ generate_invoice:
 reset_period:
   name: Reset Billing Period
   description: >
-    Resets the billing period snapshot to the current meter readings.
-    Use this if you manually reset your meter or need to realign the billing cycle.
+    Alias for close_billing_period. Resets snapshot to current readings.
+
+close_billing_period:
+  name: Close Billing Period
+  description: >
+    Call this when you receive a new EVN invoice. Archives the current period,
+    updates the snapshot to current meter readings, and starts a new period.
+    Optionally pass the last day of the closed invoice; new period starts next day.
+  fields:
+    period_end_date:
+      name: Period end date
+      description: >
+        Last day shown on your new EVN invoice (YYYY-MM-DD).
+        New period starts the following day. Defaults to yesterday.
+      required: false
+      example: "2026-04-14"
+      selector:
+        date:
+
+calculate_period:
+  name: Calculate Period Cost
+  description: >
+    Returns energy consumption and EVN bill breakdown for any historical date
+    range using recorder data. Call via script with response_variable.
+  fields:
+    start_date:
+      name: Start date
+      description: "First day of the period (YYYY-MM-DD)"
+      required: true
+      example: "2026-03-15"
+      selector:
+        date:
+    end_date:
+      name: End date
+      description: "Last day of the period (YYYY-MM-DD). Clamped to today."
+      required: true
+      example: "2026-04-14"
+      selector:
+        date:

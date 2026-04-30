@@ -1,7 +1,7 @@
 {
   "domain": "energy_invoice_mk",
   "name": "Energy Invoice MK (EVN)",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "requirements": ["reportlab>=3.6.0"],
   "dependencies": ["recorder"],
   "after_dependencies": ["energy"],
