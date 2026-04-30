@@ -9,22 +9,23 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_CONSUMER_ADDRESS,
     CONF_CONSUMER_NAME,
-    CONF_LAST_INVOICE_END,
-    CONF_LAST_INVOICE_START,
     CONF_METER_NUMBER,
     CONF_MUNICIPAL_TAX,
     CONF_NETWORK_ACCESS,
     CONF_NOTIFY_ON_PERIOD_END,
     CONF_NOTIFY_SERVICE,
     CONF_NT_RATE,
-    CONF_NT_SENSOR,
+    CONF_OFFPEAK_ENTITY,
+    CONF_PEAK_ENTITY,
+    CONF_PERIOD_START_DATE,
+    CONF_SNAPSHOT_OFFPEAK,
+    CONF_SNAPSHOT_PEAK,
     CONF_TD_RATE,
     CONF_VAT_PERCENT,
     CONF_VT_BLOCK1_RATE,
     CONF_VT_BLOCK2_RATE,
     CONF_VT_BLOCK3_RATE,
     CONF_VT_BLOCK4_RATE,
-    CONF_VT_SENSOR,
     DEFAULT_MUNICIPAL_TAX,
     DEFAULT_NETWORK_ACCESS,
     DEFAULT_NT_RATE,
@@ -39,17 +40,12 @@ from .const import (
 
 
 def _energy_sensor_selector() -> selector.EntitySelector:
-    # Use domain="sensor" only - no device_class filter.
-    # A device_class=energy filter would reject sensors that don't have that
-    # attribute explicitly set (common with smart plugs and generic energy sensors).
     return selector.EntitySelector(
         selector.EntitySelectorConfig(domain="sensor")
     )
 
 
 def _number(min_val: float, max_val: float, step: float | str = "any") -> selector.NumberSelector:
-    # HA requires step >= 0.001 for float steps; use "any" for tariff rates
-    # that need 4-decimal precision (e.g. 4.7074 MKD/kWh).
     return selector.NumberSelector(
         selector.NumberSelectorConfig(
             min=min_val,
@@ -60,16 +56,28 @@ def _number(min_val: float, max_val: float, step: float | str = "any") -> select
     )
 
 
+def _read_sensor_float(hass, entity_id: str | None) -> float | None:
+    if not entity_id:
+        return None
+    state = hass.states.get(entity_id)
+    if state is None or state.state in ("unavailable", "unknown", ""):
+        return None
+    try:
+        return float(state.state)
+    except (ValueError, TypeError):
+        return None
+
+
 class EnergyInvoiceMKConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Energy Invoice MK."""
 
-    VERSION = 1
+    VERSION = 2
 
     def __init__(self) -> None:
         self._data: dict = {}
 
     async def async_step_user(self, user_input=None):
-        """Step 1: Consumer info (name, address, meter number)."""
+        """Step 1: Consumer info."""
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_sensors()
@@ -86,14 +94,14 @@ class EnergyInvoiceMKConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_sensors(self, user_input=None):
-        """Step 2: Select VT and NT energy sensors."""
+        """Step 2: Select peak (VT) and off-peak (NT) accumulative energy sensors."""
         errors: dict = {}
         if user_input is not None:
-            vt = user_input.get(CONF_VT_SENSOR) or None
-            nt = user_input.get(CONF_NT_SENSOR) or None
-            if vt or nt:
-                self._data[CONF_VT_SENSOR] = vt
-                self._data[CONF_NT_SENSOR] = nt
+            peak = user_input.get(CONF_PEAK_ENTITY) or None
+            offpeak = user_input.get(CONF_OFFPEAK_ENTITY) or None
+            if peak or offpeak:
+                self._data[CONF_PEAK_ENTITY] = peak
+                self._data[CONF_OFFPEAK_ENTITY] = offpeak
                 return await self.async_step_tariffs()
             errors["base"] = "no_sensor_selected"
 
@@ -101,8 +109,8 @@ class EnergyInvoiceMKConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="sensors",
             data_schema=vol.Schema(
                 {
-                    vol.Optional(CONF_VT_SENSOR): _energy_sensor_selector(),
-                    vol.Optional(CONF_NT_SENSOR): _energy_sensor_selector(),
+                    vol.Optional(CONF_PEAK_ENTITY): _energy_sensor_selector(),
+                    vol.Optional(CONF_OFFPEAK_ENTITY): _energy_sensor_selector(),
                 }
             ),
             errors=errors,
@@ -132,9 +140,20 @@ class EnergyInvoiceMKConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_billing(self, user_input=None):
-        """Step 4: Last invoice dates + optional notifications."""
+        """Step 4: Billing period start date + optional notifications.
+
+        Also captures the current snapshot from the selected sensors so that
+        consumption is calculated from this moment forward.
+        """
         if user_input is not None:
             self._data.update(user_input)
+
+            # Capture snapshot at end of setup
+            snap_peak = _read_sensor_float(self.hass, self._data.get(CONF_PEAK_ENTITY))
+            snap_offpeak = _read_sensor_float(self.hass, self._data.get(CONF_OFFPEAK_ENTITY))
+            self._data[CONF_SNAPSHOT_PEAK] = snap_peak
+            self._data[CONF_SNAPSHOT_OFFPEAK] = snap_offpeak if snap_offpeak is not None else 0.0
+
             name = self._data.get(CONF_CONSUMER_NAME, "Energy Invoice MK")
             return self.async_create_entry(title=name, data=self._data)
 
@@ -142,8 +161,7 @@ class EnergyInvoiceMKConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="billing",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_LAST_INVOICE_START): selector.DateSelector(),
-                    vol.Required(CONF_LAST_INVOICE_END): selector.DateSelector(),
+                    vol.Required(CONF_PERIOD_START_DATE): selector.DateSelector(),
                     vol.Optional(CONF_NOTIFY_ON_PERIOD_END, default=False): bool,
                     vol.Optional(CONF_NOTIFY_SERVICE, default="notify.notify"): str,
                 }
@@ -157,7 +175,7 @@ class EnergyInvoiceMKConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class EnergyInvoiceMKOptionsFlow(config_entries.OptionsFlow):
-    """Options flow - update tariffs or sensors without re-adding the integration."""
+    """Options flow — update tariffs, sensors, or billing period."""
 
     def __init__(self, config_entry) -> None:
         self._config_entry = config_entry
@@ -171,32 +189,25 @@ class EnergyInvoiceMKOptionsFlow(config_entries.OptionsFlow):
                 key, self._config_entry.data.get(key, default)
             )
 
-        # Build sensor/date fields without a default when value is None to avoid
-        # selector errors with null defaults.
-        vt_sensor = get(CONF_VT_SENSOR)
-        nt_sensor = get(CONF_NT_SENSOR)
-        inv_start = get(CONF_LAST_INVOICE_START)
-        inv_end = get(CONF_LAST_INVOICE_END)
+        peak = get(CONF_PEAK_ENTITY)
+        offpeak = get(CONF_OFFPEAK_ENTITY)
+        period_start = get(CONF_PERIOD_START_DATE)
 
         sensor_schema: dict = {}
-        if vt_sensor:
-            sensor_schema[vol.Optional(CONF_VT_SENSOR, default=vt_sensor)] = _energy_sensor_selector()
+        if peak:
+            sensor_schema[vol.Optional(CONF_PEAK_ENTITY, default=peak)] = _energy_sensor_selector()
         else:
-            sensor_schema[vol.Optional(CONF_VT_SENSOR)] = _energy_sensor_selector()
-        if nt_sensor:
-            sensor_schema[vol.Optional(CONF_NT_SENSOR, default=nt_sensor)] = _energy_sensor_selector()
+            sensor_schema[vol.Optional(CONF_PEAK_ENTITY)] = _energy_sensor_selector()
+        if offpeak:
+            sensor_schema[vol.Optional(CONF_OFFPEAK_ENTITY, default=offpeak)] = _energy_sensor_selector()
         else:
-            sensor_schema[vol.Optional(CONF_NT_SENSOR)] = _energy_sensor_selector()
+            sensor_schema[vol.Optional(CONF_OFFPEAK_ENTITY)] = _energy_sensor_selector()
 
         date_schema: dict = {}
-        if inv_start:
-            date_schema[vol.Optional(CONF_LAST_INVOICE_START, default=inv_start)] = selector.DateSelector()
+        if period_start:
+            date_schema[vol.Optional(CONF_PERIOD_START_DATE, default=period_start)] = selector.DateSelector()
         else:
-            date_schema[vol.Optional(CONF_LAST_INVOICE_START)] = selector.DateSelector()
-        if inv_end:
-            date_schema[vol.Optional(CONF_LAST_INVOICE_END, default=inv_end)] = selector.DateSelector()
-        else:
-            date_schema[vol.Optional(CONF_LAST_INVOICE_END)] = selector.DateSelector()
+            date_schema[vol.Optional(CONF_PERIOD_START_DATE)] = selector.DateSelector()
 
         tariff_schema = {
             vol.Required(CONF_VT_BLOCK1_RATE, default=get(CONF_VT_BLOCK1_RATE, DEFAULT_VT_BLOCK1_RATE)): _number(0, 50),
