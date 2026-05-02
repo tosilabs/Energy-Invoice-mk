@@ -1,0 +1,78 @@
+# ============================================================
+#  Helper Scripts for EVN Dashboard
+#  Add these to your scripts.yaml or create via HA UI
+#  Settings → Automations & Scenes → Scripts → Add Script
+# ============================================================
+
+evn_calculate_period:
+  alias: EVN — Пресметај период
+  icon: mdi:calculator
+  sequence:
+    - action: energy_invoice_mk.calculate_period
+      data:
+        start_date: "{{ states('input_datetime.evn_calc_start') }}"
+        end_date:   "{{ states('input_datetime.evn_calc_end') }}"
+      response_variable: result
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.evn_calc_result
+      data:
+        value: >
+          VT: {{ result.vt_consumption | round(2) }} kWh |
+          NT: {{ result.nt_consumption | round(2) }} kWh |
+          Вкупно: {{ result.total_consumption | round(2) }} kWh |
+          Сметка: {{ result.total_cost | round(2) }} MKD
+
+evn_set_last_30_days:
+  alias: EVN — Постави последни 30 дена
+  icon: mdi:calendar-range
+  sequence:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.evn_calc_start
+      data:
+        date: "{{ (now() - timedelta(days=30)).strftime('%Y-%m-%d') }}"
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.evn_calc_end
+      data:
+        date: "{{ now().strftime('%Y-%m-%d') }}"
+
+evn_set_previous_month:
+  alias: EVN — Постави претходен месец
+  icon: mdi:calendar-arrow-left
+  sequence:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.evn_calc_start
+      data:
+        date: >
+          {% set now = now() %}
+          {% if now.month == 1 %}
+            {{ (now.year - 1) }}-12-01
+          {% else %}
+            {{ now.year }}-{{ '%02d' % (now.month - 1) }}-01
+          {% endif %}
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.evn_calc_end
+      data:
+        date: >
+          {% set now = now() %}
+          {{ now.year }}-{{ '%02d' % now.month }}-01
+          {# this sets end = first day of current month (exclusive) #}
+
+evn_set_this_year:
+  alias: EVN — Постави оваа година
+  icon: mdi:calendar-star
+  sequence:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.evn_calc_start
+      data:
+        date: "{{ now().year }}-01-01"
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.evn_calc_end
+      data:
+        date: "{{ now().strftime('%Y-%m-%d') }}"
