@@ -25,6 +25,8 @@ from .const import (
     CONF_OFFPEAK_ENTITY,
     CONF_PEAK_ENTITY,
     CONF_PERIOD_START_DATE,
+    CONF_SNAPSHOT_ENTITY_OFFPEAK,
+    CONF_SNAPSHOT_ENTITY_PEAK,
     CONF_SNAPSHOT_OFFPEAK,
     CONF_SNAPSHOT_PEAK,
     CONF_TD_RATE,
@@ -283,20 +285,39 @@ class EnergyInvoiceCoordinator(DataUpdateCoordinator):
         if current_offpeak is None:
             current_offpeak = 0.0
 
-        # If no snapshot yet, take it now and save to entry data
         snap_peak = self._get_cfg(CONF_SNAPSHOT_PEAK)
         snap_offpeak = self._get_cfg(CONF_SNAPSHOT_OFFPEAK)
+        snap_entity_peak = self._get_cfg(CONF_SNAPSHOT_ENTITY_PEAK)
+        snap_entity_offpeak = self._get_cfg(CONF_SNAPSHOT_ENTITY_OFFPEAK)
 
-        if snap_peak is None and current_peak is not None:
-            _LOGGER.debug("No snapshot found — taking initial snapshot now")
+        # Re-take snapshot if: (a) no snapshot yet, or (b) sensor was changed
+        needs_snapshot = (
+            (snap_peak is None and current_peak is not None)
+            or (peak_entity and snap_entity_peak and snap_entity_peak != peak_entity)
+        )
+        if needs_snapshot and current_peak is not None:
+            _LOGGER.info(
+                "Taking new snapshot for %s = %.3f kWh (reason: %s)",
+                peak_entity,
+                current_peak,
+                "entity changed" if snap_entity_peak and snap_entity_peak != peak_entity else "first run",
+            )
             new_data = {
                 **self.entry.data,
                 CONF_SNAPSHOT_PEAK: current_peak,
                 CONF_SNAPSHOT_OFFPEAK: current_offpeak,
+                CONF_SNAPSHOT_ENTITY_PEAK: peak_entity,
+                CONF_SNAPSHOT_ENTITY_OFFPEAK: offpeak_entity,
             }
             self.hass.config_entries.async_update_entry(self.entry, data=new_data)
             snap_peak = current_peak
             snap_offpeak = current_offpeak
+
+        _LOGGER.debug(
+            "peak_entity=%s current=%.3f snap=%.3f | offpeak_entity=%s current=%.3f snap=%.3f",
+            peak_entity, current_peak or 0.0, float(snap_peak or 0),
+            offpeak_entity, current_offpeak, float(snap_offpeak or 0),
+        )
 
         vt_consumption = 0.0
         nt_consumption = 0.0
@@ -349,6 +370,14 @@ class EnergyInvoiceCoordinator(DataUpdateCoordinator):
             "nt_rate": tariff["nt_rate"],
             "td_rate": tariff["td_rate"],
             "vat_percent": tariff["vat_percent"],
+            # Diagnostic fields — visible in Developer Tools → States → Attributes
+            "_diag_peak_entity": peak_entity,
+            "_diag_offpeak_entity": offpeak_entity,
+            "_diag_current_peak_kwh": round(current_peak, 3) if current_peak is not None else None,
+            "_diag_current_offpeak_kwh": round(current_offpeak, 3),
+            "_diag_snapshot_peak_kwh": round(float(snap_peak), 3) if snap_peak is not None else None,
+            "_diag_snapshot_offpeak_kwh": round(float(snap_offpeak), 3) if snap_offpeak is not None else None,
+            "_diag_sensor_available": current_peak is not None,
         }
 
     async def _calculate_historical_data(

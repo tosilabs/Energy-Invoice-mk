@@ -45,6 +45,8 @@ CONF_OFFPEAK_ENTITY = "offpeak_entity"  # Accumulative lifetime NT kWh sensor
 CONF_PERIOD_START_DATE = "period_start_date"   # ISO date when current period started
 CONF_SNAPSHOT_PEAK = "snapshot_peak"           # VT reading at period start
 CONF_SNAPSHOT_OFFPEAK = "snapshot_offpeak"     # NT reading at period start
+CONF_SNAPSHOT_ENTITY_PEAK = "snapshot_entity_peak"       # Entity used for peak snapshot
+CONF_SNAPSHOT_ENTITY_OFFPEAK = "snapshot_entity_offpeak" # Entity used for offpeak snapshot
 
 # Kept for migration from v1
 CONF_VT_SENSOR = "vt_sensor"
