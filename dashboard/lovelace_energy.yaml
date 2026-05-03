@@ -1,0 +1,418 @@
+# ============================================================
+#  Energy Invoice MK — Modern Energy Dashboard
+#  Consumer: Fatos  |  EVN Macedonia  |  v1.1.0
+# ============================================================
+#
+# KËRKON (instalo nga HACS para se ta shtosh):
+#   • apexcharts-card  → HACS → Frontend → "ApexCharts Card"
+#
+# HELPERS (krijo në HA → Settings → Helpers):
+#   • input_datetime  evn_calc_start   (Date only)
+#   • input_datetime  evn_calc_end     (Date only)
+#   • input_text      evn_calc_result  (Max: 255)
+#
+# SKRIPTET: shto skedarin ha_scripts.yaml
+# ============================================================
+
+title: "⚡ EVN Energji"
+path: evn-energy
+
+background: "var(--primary-background-color)"
+
+cards:
+
+  # ════════════════════════════════════════════════════════════
+  # 1. HEADER — periudha + shifrat kryesore
+  # ════════════════════════════════════════════════════════════
+  - type: markdown
+    card_mod:
+      style: |
+        ha-card {
+          background: linear-gradient(135deg, #003F87 0%, #0066CC 100%);
+          color: white;
+          border-radius: 16px;
+          padding: 4px;
+        }
+        ha-card .markdown-card-content { color: white; }
+    content: |
+      {% set bill   = states('sensor.fatos_total_bill_current_period') | float(0) %}
+      {% set kwh    = states('sensor.fatos_total_consumption_current_period') | float(0) %}
+      {% set avg    = states('sensor.fatos_daily_average_cost') | float(0) %}
+      {% set est    = states('sensor.fatos_estimated_monthly_bill') | float(0) %}
+      {% set days   = state_attr('sensor.fatos_total_bill_current_period', 'days_in_period') | int(0) %}
+      {% set pstart = state_attr('sensor.fatos_total_bill_current_period', 'period_start') or '—' %}
+      {% set pend   = state_attr('sensor.fatos_total_bill_current_period', 'period_end') or '—' %}
+
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 4px">
+        <div>
+          <div style="font-size:0.85em;opacity:0.8">⚡ EVN Maqedoni · Fatos</div>
+          <div style="font-size:0.9em;opacity:0.75">{{ pstart }} → {{ pend }} &nbsp;·&nbsp; {{ days }} ditë</div>
+        </div>
+        <div style="text-align:right;font-size:0.8em;opacity:0.75">
+          Parashikim mujor: <b>{{ est | round(0) }} MKD</b>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:0 4px 8px">
+        <div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:14px;text-align:center">
+          <div style="font-size:2em;font-weight:700;line-height:1.1">{{ bill | round(0) }}</div>
+          <div style="font-size:0.75em;opacity:0.85">MKD · Fatura</div>
+        </div>
+        <div style="background:rgba(255,215,0,0.25);border-radius:12px;padding:14px;text-align:center">
+          <div style="font-size:2em;font-weight:700;line-height:1.1">{{ kwh | round(1) }}</div>
+          <div style="font-size:0.75em;opacity:0.85">kWh · Konsumi</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:14px;text-align:center">
+          <div style="font-size:2em;font-weight:700;line-height:1.1">{{ avg | round(0) }}</div>
+          <div style="font-size:0.75em;opacity:0.85">MKD/ditë</div>
+        </div>
+      </div>
+
+  # ════════════════════════════════════════════════════════════
+  # 2. GAUGE ROW — fatura + pozicioni VT
+  # ════════════════════════════════════════════════════════════
+  - type: horizontal-stack
+    cards:
+      - type: gauge
+        entity: sensor.fatos_total_bill_current_period
+        name: Fatura totale
+        unit: MKD
+        min: 0
+        max: 10000
+        severity:
+          green: 0
+          yellow: 3000
+          red: 6000
+        needle: true
+
+      - type: gauge
+        entity: sensor.fatos_vt_consumption_current_period
+        name: VT — pozicioni blloqeve
+        unit: kWh
+        min: 0
+        max: 1050
+        severity:
+          green: 0
+          yellow: 210
+          red: 630
+        needle: true
+
+  # ════════════════════════════════════════════════════════════
+  # 3. VT BLOCK PROGRESS BARS
+  # ════════════════════════════════════════════════════════════
+  - type: markdown
+    title: "⚡ Blloku VT — Ku jam tani"
+    content: |
+      {% set vt  = states('sensor.fatos_vt_consumption_current_period') | float(0) %}
+      {% set b1  = state_attr('sensor.fatos_total_bill_current_period', 'vt_block1_kwh') | float(0) %}
+      {% set b2  = state_attr('sensor.fatos_total_bill_current_period', 'vt_block2_kwh') | float(0) %}
+      {% set b3  = state_attr('sensor.fatos_total_bill_current_period', 'vt_block3_kwh') | float(0) %}
+      {% set b4  = state_attr('sensor.fatos_total_bill_current_period', 'vt_block4_kwh') | float(0) %}
+      {% set f1  = ([b1 / 210  * 30, 30] | min) | int %}
+      {% set f2  = ([b2 / 420  * 30, 30] | min) | int %}
+      {% set f3  = ([b3 / 420  * 30, 30] | min) | int %}
+      {% set f4  = ([b4 / 420  * 30, 30] | min) | int %}
+
+      ---
+
+      {% if vt < 210 %}### 🟢 Blloku 1 — AKTIV{% else %}### Blloku 1 ✅{% endif %}
+      **0 – 210 kWh &nbsp;·&nbsp; 4.71 MKD/kWh**
+      `{% for i in range(30) %}{{ '█' if i < f1 else '░' }}{% endfor %}` **{{ b1 | round(2) }}/210 kWh**
+      {% if vt < 210 %}➡ **{{ (210 - vt) | round(2) }} kWh deri Blloku 2**{% endif %}
+
+      ---
+
+      {% if vt >= 210 and vt < 630 %}### 🟡 Blloku 2 — AKTIV{% elif b2 > 0 %}### Blloku 2 ✅{% else %}### Blloku 2 ⬜{% endif %}
+      **211 – 630 kWh &nbsp;·&nbsp; 5.90 MKD/kWh**
+      `{% for i in range(30) %}{{ '█' if i < f2 else '░' }}{% endfor %}` **{{ b2 | round(2) }}/420 kWh**
+      {% if vt >= 210 and vt < 630 %}➡ **{{ (630 - vt) | round(2) }} kWh deri Blloku 3**{% endif %}
+
+      ---
+
+      {% if vt >= 630 and vt < 1050 %}### 🔴 Blloku 3 — AKTIV{% elif b3 > 0 %}### Blloku 3 ✅{% else %}### Blloku 3 ⬜{% endif %}
+      **631 – 1050 kWh &nbsp;·&nbsp; 7.85 MKD/kWh**
+      `{% for i in range(30) %}{{ '█' if i < f3 else '░' }}{% endfor %}` **{{ b3 | round(2) }}/420 kWh**
+      {% if vt >= 630 and vt < 1050 %}➡ **{{ (1050 - vt) | round(2) }} kWh deri Blloku 4**{% endif %}
+
+      ---
+
+      {% if vt >= 1050 %}### 🚨 Blloku 4 — AKTIV (çmim maksimal!){% else %}### Blloku 4 ⬜{% endif %}
+      **> 1050 kWh &nbsp;·&nbsp; 19.19 MKD/kWh**
+      {% if b4 > 0 %}`{% for i in range(30) %}{{ '█' if i < f4 else '░' }}{% endfor %}` **{{ b4 | round(2) }} kWh**
+      {% else %}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0 kWh{% endif %}
+
+  # ════════════════════════════════════════════════════════════
+  # 4. AREA CHART — konsumi VT + NT (30 ditë) [ApexCharts]
+  # ════════════════════════════════════════════════════════════
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: "📈 Konsumi — 30 ditët e fundit"
+      show_states: true
+      colorize_states: true
+    graph_span: 30d
+    apex_config:
+      chart:
+        type: area
+        toolbar:
+          show: false
+      fill:
+        type: gradient
+        gradient:
+          shadeIntensity: 1
+          opacityFrom: 0.55
+          opacityTo: 0.05
+      grid:
+        strokeDashArray: 4
+      legend:
+        position: top
+    series:
+      - entity: sensor.fatos_vt_consumption_current_period
+        name: "VT (e lartë)"
+        color: "#003F87"
+        curve: smooth
+        stroke_width: 2
+      - entity: sensor.fatos_nt_consumption_current_period
+        name: "NT (e ulët)"
+        color: "#FFD700"
+        curve: smooth
+        stroke_width: 2
+
+  # ════════════════════════════════════════════════════════════
+  # 5. BAR CHART — konsumi ditor kWh [ApexCharts]
+  # ════════════════════════════════════════════════════════════
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: "📊 Konsumi ditor (kWh)"
+      show_states: true
+      colorize_states: true
+    graph_span: 30d
+    apex_config:
+      chart:
+        toolbar:
+          show: false
+      plotOptions:
+        bar:
+          borderRadius: 4
+          columnWidth: "70%"
+      grid:
+        strokeDashArray: 4
+      legend:
+        position: top
+      yaxis:
+        min: 0
+    series:
+      - entity: sensor.fatos_vt_consumption_current_period
+        name: "VT"
+        color: "#003F87"
+        type: column
+        group_by:
+          func: diff
+          duration: 1d
+      - entity: sensor.fatos_nt_consumption_current_period
+        name: "NT"
+        color: "#4CAF50"
+        type: column
+        group_by:
+          func: diff
+          duration: 1d
+
+  # ════════════════════════════════════════════════════════════
+  # 6. BAR CHART — kostoja ditore MKD [ApexCharts]
+  # ════════════════════════════════════════════════════════════
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: "💰 Kostoja ditore (MKD)"
+      show_states: true
+      colorize_states: true
+    graph_span: 30d
+    apex_config:
+      chart:
+        toolbar:
+          show: false
+      plotOptions:
+        bar:
+          borderRadius: 4
+          columnWidth: "60%"
+      grid:
+        strokeDashArray: 4
+      colors:
+        - "#FF6B35"
+      yaxis:
+        min: 0
+    series:
+      - entity: sensor.fatos_total_bill_current_period
+        name: "Kostoja MKD"
+        type: column
+        group_by:
+          func: diff
+          duration: 1d
+
+  # ════════════════════════════════════════════════════════════
+  # 7. NDARJA E FATURËS — breakdown
+  # ════════════════════════════════════════════════════════════
+  - type: markdown
+    title: "🧾 Ndarja e faturës"
+    content: |
+      {% set vt_c  = state_attr('sensor.fatos_total_bill_current_period', 'vt_cost_mkd')            | float(0) %}
+      {% set nt_c  = state_attr('sensor.fatos_total_bill_current_period', 'nt_cost_mkd')            | float(0) %}
+      {% set td    = state_attr('sensor.fatos_total_bill_current_period', 'td_cost_mkd')            | float(0) %}
+      {% set net   = state_attr('sensor.fatos_total_bill_current_period', 'network_access_mkd')     | float(0) %}
+      {% set sub   = state_attr('sensor.fatos_total_bill_current_period', 'subtotal_before_vat_mkd')| float(0) %}
+      {% set vat   = state_attr('sensor.fatos_total_bill_current_period', 'vat_18pct_mkd')          | float(0) %}
+      {% set mun   = state_attr('sensor.fatos_total_bill_current_period', 'municipal_tax_mkd')      | float(0) %}
+      {% set total = states('sensor.fatos_total_bill_current_period') | float(0) %}
+
+      | Zëri | MKD |
+      |------|----:|
+      | ⚡ Energji VT | **{{ vt_c | round(2) }}** |
+      | ⚡ Energji NT | **{{ nt_c | round(2) }}** |
+      | 🔌 Transmetim + Shpërndarje | **{{ td | round(2) }}** |
+      | 🏗️ Akses në rrjet (fiks) | **{{ net | round(2) }}** |
+      | &nbsp; | &nbsp; |
+      | Nëntotal (para TVSH-së) | {{ sub | round(2) }} |
+      | 🧾 TVSH 18% | {{ vat | round(2) }} |
+      | 🏛️ Taksë komunale (jashtë TVSH) | {{ mun | round(2) }} |
+      | &nbsp; | &nbsp; |
+      | **💳 GJITHSEJ** | **{{ total | round(2) }} MKD** |
+
+  # ════════════════════════════════════════════════════════════
+  # 8. KRAHASIM HISTORIK [ApexCharts]
+  # ════════════════════════════════════════════════════════════
+  - type: custom:apexcharts-card
+    header:
+      show: true
+      title: "📅 Historia — konsumi në kohë"
+      show_states: true
+      colorize_states: true
+    graph_span: 90d
+    apex_config:
+      chart:
+        toolbar:
+          show: false
+      fill:
+        type: gradient
+        gradient:
+          opacityFrom: 0.4
+          opacityTo: 0.0
+      grid:
+        strokeDashArray: 4
+      legend:
+        position: top
+    series:
+      - entity: sensor.fatos_last_30_days_consumption
+        name: "30 ditët e fundit (kWh)"
+        color: "#9C27B0"
+        curve: stepline
+        stroke_width: 2
+      - entity: sensor.fatos_total_consumption_current_period
+        name: "Periudha aktuale (kWh)"
+        color: "#003F87"
+        curve: smooth
+        stroke_width: 2
+
+  # ════════════════════════════════════════════════════════════
+  # 9. STATISKTIKA — tiles modernë
+  # ════════════════════════════════════════════════════════════
+  - type: horizontal-stack
+    cards:
+      - type: tile
+        entity: sensor.fatos_last_30_days_cost
+        name: "30 ditët e fundit"
+        icon: mdi:calendar-range
+        color: purple
+      - type: tile
+        entity: sensor.fatos_previous_billing_period_cost
+        name: "Periudha e mëparshme"
+        icon: mdi:history
+        color: orange
+      - type: tile
+        entity: sensor.fatos_this_year_cost
+        name: "Këtë vit"
+        icon: mdi:calendar-star
+        color: green
+
+  - type: horizontal-stack
+    cards:
+      - type: tile
+        entity: sensor.fatos_last_30_days_consumption
+        name: "30 ditët — kWh"
+        icon: mdi:lightning-bolt
+        color: purple
+      - type: tile
+        entity: sensor.fatos_previous_billing_period_consumption
+        name: "Periudha e mëparshme"
+        icon: mdi:lightning-bolt-outline
+        color: orange
+      - type: tile
+        entity: sensor.fatos_this_year_consumption
+        name: "Këtë vit — kWh"
+        icon: mdi:chart-line
+        color: green
+
+  # ════════════════════════════════════════════════════════════
+  # 10. KALKULATOR PERIUDHE
+  # ════════════════════════════════════════════════════════════
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: "## 🔢 Kalkulator periudhe"
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "30 ditët e fundit"
+            icon: mdi:calendar-range
+            tap_action:
+              action: call-service
+              service: script.evn_set_last_30_days
+          - type: button
+            name: "Muaji i kaluar"
+            icon: mdi:calendar-arrow-left
+            tap_action:
+              action: call-service
+              service: script.evn_set_previous_month
+          - type: button
+            name: "Këtë vit"
+            icon: mdi:calendar-star
+            tap_action:
+              action: call-service
+              service: script.evn_set_this_year
+
+      - type: entities
+        entities:
+          - entity: input_datetime.evn_calc_start
+            name: Data fillimit
+            icon: mdi:calendar-start
+          - entity: input_datetime.evn_calc_end
+            name: Data mbarimit
+            icon: mdi:calendar-end
+
+      - type: button
+        name: "⚡ Llogarit faturën"
+        icon: mdi:calculator
+        show_name: true
+        show_icon: true
+        tap_action:
+          action: call-service
+          service: script.evn_calculate_period
+
+      - type: entities
+        entities:
+          - entity: input_text.evn_calc_result
+            name: Rezultati
+            icon: mdi:text-box-outline
+
+  # ════════════════════════════════════════════════════════════
+  # 11. DIAGNOSTIKË
+  # ════════════════════════════════════════════════════════════
+  - type: entities
+    title: Diagnostikë
+    show_header_toggle: false
+    state_color: false
+    entities:
+      - entity: sensor.fatos_total_bill_current_period
+        name: Atributet (shiko Developer Tools)
+        icon: mdi:bug
