@@ -3,35 +3,15 @@
 #  Consumer: Fatos  |  EVN Macedonia  |  v1.1.0
 # ============================================================
 #
-# SETUP (run once in HA → Settings → Devices & Services → Helpers):
+# SETUP — krijo këto para se ta shtosh dashboardin:
 #
-#   1. Create helper: input_datetime.evn_calc_start
-#        Type: Date and/or time  |  Date only: ON
+#   1. Settings → Devices & Services → Helpers → Add Helper
+#      • input_datetime  ID: evn_calc_start    (Date only)
+#      • input_datetime  ID: evn_calc_end      (Date only)
+#      • input_text      ID: evn_calc_result   (Max: 255)
 #
-#   2. Create helper: input_datetime.evn_calc_end
-#        Type: Date and/or time  |  Date only: ON
-#
-#   3. Create helper: input_text.evn_calc_result
-#        Name: EVN Calc Result  |  Max length: 255
-#
-#   4. Create Script (Settings → Automations → Scripts → Add Script):
-#        Alias:  evn_calculate_period
-#        ID:     evn_calculate_period
-#        ---
-#        sequence:
-#          - action: energy_invoice_mk.calculate_period
-#            data:
-#              start_date: "{{ states('input_datetime.evn_calc_start') }}"
-#              end_date:   "{{ states('input_datetime.evn_calc_end') }}"
-#            response_variable: result
-#          - action: input_text.set_value
-#            target:
-#              entity_id: input_text.evn_calc_result
-#            data:
-#              value: >
-#                VT: {{ result.vt_consumption | round(2) }} kWh |
-#                NT: {{ result.nt_consumption | round(2) }} kWh |
-#                Total: {{ result.total_cost | round(2) }} MKD
+#   2. Settings → Automations → Scripts → Add Script
+#      Shto 4 skriptet nga skedari ha_scripts.yaml
 #
 # ============================================================
 
@@ -42,17 +22,19 @@ cards:
 
   # ── 1. PERIOD HEADER ────────────────────────────────────────
   - type: markdown
-    content: >
-      ## ⚡ EVN Македонија — Тековен период
-      **Период:**
+    content: |
+      ## ⚡ EVN Maqedoni — Periudha aktuale
+      **Periudha:**
       {{ state_attr('sensor.fatos_total_bill_current_period', 'period_start') or '—' }}
       →
       {{ state_attr('sensor.fatos_total_bill_current_period', 'period_end') or '—' }}
+      &nbsp;·&nbsp;
+      **{{ state_attr('sensor.fatos_total_bill_current_period', 'days_in_period') or '—' }} ditë**
 
   # ── 2. TOTAL BILL GAUGE ──────────────────────────────────────
   - type: gauge
     entity: sensor.fatos_total_bill_current_period
-    name: Вкупна сметка
+    name: Fatura totale
     unit: MKD
     min: 0
     max: 10000
@@ -64,88 +46,139 @@ cards:
 
   # ── 3. CONSUMPTION SUMMARY ───────────────────────────────────
   - type: glance
-    title: Потрошувачка (тековен период)
+    title: Konsumi (periudha aktuale)
     columns: 3
     entities:
       - entity: sensor.fatos_vt_consumption_current_period
-        name: VT (висока)
+        name: VT (e lartë)
       - entity: sensor.fatos_nt_consumption_current_period
-        name: NT (ниска)
+        name: NT (e ulët)
       - entity: sensor.fatos_total_consumption_current_period
-        name: Вкупно
+        name: Gjithsej
 
-  # ── 4. BILL BREAKDOWN ────────────────────────────────────────
+  # ── 4. VT BLOCK PROGRESS BARS ────────────────────────────────
+  - type: markdown
+    title: "⚡ Blloku VT — Ku jam tani"
+    content: |
+      {% set vt  = states('sensor.fatos_vt_consumption_current_period') | float(0) %}
+      {% set b1  = state_attr('sensor.fatos_total_bill_current_period', 'vt_block1_kwh') | float(0) %}
+      {% set b2  = state_attr('sensor.fatos_total_bill_current_period', 'vt_block2_kwh') | float(0) %}
+      {% set b3  = state_attr('sensor.fatos_total_bill_current_period', 'vt_block3_kwh') | float(0) %}
+      {% set b4  = state_attr('sensor.fatos_total_bill_current_period', 'vt_block4_kwh') | float(0) %}
+      {% set f1  = ([b1 / 210  * 24, 24] | min) | int %}
+      {% set f2  = ([b2 / 420  * 24, 24] | min) | int %}
+      {% set f3  = ([b3 / 420  * 24, 24] | min) | int %}
+      {% set f4  = ([b4 / 420  * 24, 24] | min) | int %}
+
+      ---
+
+      {% if vt < 210 %}### 🟢 Blloku 1 — AKTIV{% else %}### Blloku 1 — ✅ Mbushur{% endif %}
+      **0 – 210 kWh &nbsp;·&nbsp; 4.71 MKD/kWh**
+      {% for i in range(24) %}{{ '█' if i < f1 else '░' }}{% endfor %} **{{ b1 | round(2) }} / 210 kWh**
+      {% if vt < 210 %}
+      ➡ **{{ (210 - vt) | round(2) }} kWh mbeten deri Blloku 2**
+      {% endif %}
+
+      ---
+
+      {% if vt >= 210 and vt < 630 %}### 🟡 Blloku 2 — AKTIV{% elif b2 > 0 %}### Blloku 2 — ✅ Mbushur{% else %}### Blloku 2 — ⬜ Jo aktiv ende{% endif %}
+      **211 – 630 kWh &nbsp;·&nbsp; 5.90 MKD/kWh**
+      {% for i in range(24) %}{{ '█' if i < f2 else '░' }}{% endfor %} **{{ b2 | round(2) }} / 420 kWh**
+      {% if vt >= 210 and vt < 630 %}
+      ➡ **{{ (630 - vt) | round(2) }} kWh mbeten deri Blloku 3**
+      {% endif %}
+
+      ---
+
+      {% if vt >= 630 and vt < 1050 %}### 🔴 Blloku 3 — AKTIV{% elif b3 > 0 %}### Blloku 3 — ✅ Mbushur{% else %}### Blloku 3 — ⬜ Jo aktiv ende{% endif %}
+      **631 – 1050 kWh &nbsp;·&nbsp; 7.85 MKD/kWh**
+      {% for i in range(24) %}{{ '█' if i < f3 else '░' }}{% endfor %} **{{ b3 | round(2) }} / 420 kWh**
+      {% if vt >= 630 and vt < 1050 %}
+      ➡ **{{ (1050 - vt) | round(2) }} kWh mbeten deri Blloku 4**
+      {% endif %}
+
+      ---
+
+      {% if vt >= 1050 %}### 🚨 Blloku 4 — AKTIV (çmim maksimal!){% else %}### Blloku 4 — ⬜ Jo aktiv ende{% endif %}
+      **> 1050 kWh &nbsp;·&nbsp; 19.19 MKD/kWh**
+      {% if b4 > 0 %}
+      {% for i in range(24) %}{{ '█' if i < f4 else '░' }}{% endfor %} **{{ b4 | round(2) }} kWh**
+      {% else %}
+      ░░░░░░░░░░░░░░░░░░░░░░░░ 0 kWh
+      {% endif %}
+
+  # ── 5. BILL BREAKDOWN ────────────────────────────────────────
   - type: entities
-    title: Разбивка на сметка
+    title: Ndarja e faturës
     show_header_toggle: false
     entities:
       - entity: sensor.fatos_vt_energy_cost
-        name: Енергија VT
+        name: Energji VT
         icon: mdi:lightning-bolt
       - entity: sensor.fatos_nt_energy_cost
-        name: Енергија NT
+        name: Energji NT
         icon: mdi:lightning-bolt-outline
       - entity: sensor.fatos_energy_cost_vt_nt
-        name: Енергија (VT+NT)
+        name: Energji (VT+NT)
         icon: mdi:sigma
       - type: divider
       - entity: sensor.fatos_transmission_distribution_cost
-        name: Пренос + Дистрибуција
+        name: Transmetim + Shpërndarje
         icon: mdi:transmission-tower
       - type: section
-        label: Фиксни трошоци
+        label: Taksa fikse
       - entity: sensor.fatos_vat_18
-        name: ДДВ (18%)
+        name: TVSH (18%)
         icon: mdi:percent
       - entity: sensor.fatos_total_bill_current_period
-        name: ВКУПНА СМЕТКА
+        name: FATURA TOTALE
         icon: mdi:receipt
 
-  # ── 5. ESTIMATES ─────────────────────────────────────────────
+  # ── 6. ESTIMATES ─────────────────────────────────────────────
   - type: glance
-    title: Проценки
+    title: Parashikime
     columns: 2
     entities:
       - entity: sensor.fatos_estimated_monthly_bill
-        name: Проценка месечна
+        name: Fatura mujore e parash.
         icon: mdi:calendar-month
       - entity: sensor.fatos_daily_average_cost
-        name: Дневен просек
+        name: Mesatare ditore
         icon: mdi:calendar-today
 
-  # ── 6. HISTORY ───────────────────────────────────────────────
+  # ── 7. HISTORY ───────────────────────────────────────────────
   - type: entities
-    title: Историја
+    title: Historia
     show_header_toggle: false
     entities:
       - type: section
-        label: Последни 30 дена
+        label: 30 ditët e fundit
       - entity: sensor.fatos_last_30_days_consumption
-        name: Потрошувачка (30 дена)
+        name: Konsumi (30 ditë)
         icon: mdi:calendar-range
       - entity: sensor.fatos_last_30_days_cost
-        name: Трошок (30 дена)
+        name: Kostoja (30 ditë)
         icon: mdi:cash
       - type: section
-        label: Претходен период
+        label: Periudha e mëparshme
       - entity: sensor.fatos_previous_billing_period_consumption
-        name: Потрошувачка
+        name: Konsumi
         icon: mdi:history
       - entity: sensor.fatos_previous_billing_period_cost
-        name: Трошок
+        name: Kostoja
         icon: mdi:cash-minus
       - type: section
-        label: Оваа година
+        label: Këtë vit
       - entity: sensor.fatos_this_year_consumption
-        name: Потрошувачка
+        name: Konsumi
         icon: mdi:chart-line
       - entity: sensor.fatos_this_year_cost
-        name: Трошок
+        name: Kostoja
         icon: mdi:bank
 
-  # ── 7. HISTORY GRAPH ─────────────────────────────────────────
+  # ── 8. HISTORY GRAPH ─────────────────────────────────────────
   - type: history-graph
-    title: Потрошувачка — последни 7 дена
+    title: Konsumi — 7 ditët e fundit
     hours_to_show: 168
     entities:
       - entity: sensor.fatos_vt_consumption_current_period
@@ -153,49 +186,46 @@ cards:
       - entity: sensor.fatos_nt_consumption_current_period
         name: NT
       - entity: sensor.fatos_total_consumption_current_period
-        name: Вкупно
+        name: Gjithsej
 
-  # ── 8. PERIOD CALCULATOR ─────────────────────────────────────
+  # ── 9. PERIOD CALCULATOR ─────────────────────────────────────
   - type: vertical-stack
     cards:
       - type: markdown
-        content: "## 🔢 Калкулатор за период"
+        content: "## 🔢 Kalkulator periudhe"
 
-      # Shortcut buttons
       - type: horizontal-stack
         cards:
           - type: button
-            name: "Последни 30 дена"
+            name: "30 ditët e fundit"
             icon: mdi:calendar-range
             tap_action:
               action: call-service
               service: script.evn_set_last_30_days
           - type: button
-            name: "Претходен месец"
+            name: "Muaji i kaluar"
             icon: mdi:calendar-arrow-left
             tap_action:
               action: call-service
               service: script.evn_set_previous_month
           - type: button
-            name: "Оваа година"
+            name: "Këtë vit"
             icon: mdi:calendar-star
             tap_action:
               action: call-service
               service: script.evn_set_this_year
 
-      # Date pickers
       - type: entities
         entities:
           - entity: input_datetime.evn_calc_start
-            name: Почетна дата
+            name: Data fillimit
             icon: mdi:calendar-start
           - entity: input_datetime.evn_calc_end
-            name: Крајна дата
+            name: Data mbarimit
             icon: mdi:calendar-end
 
-      # Calculate button
       - type: button
-        name: "Пресметај сметка"
+        name: "Llogarit faturën"
         icon: mdi:calculator
         show_name: true
         show_icon: true
@@ -203,19 +233,18 @@ cards:
           action: call-service
           service: script.evn_calculate_period
 
-      # Result display
       - type: entities
         entities:
           - entity: input_text.evn_calc_result
-            name: Резултат
+            name: Rezultati
             icon: mdi:text-box-outline
 
-  # ── 9. DIAGNOSTICS (collapsed) ───────────────────────────────
+  # ── 10. DIAGNOSTICS ──────────────────────────────────────────
   - type: entities
-    title: Дијагностика (напредно)
+    title: Diagnostikë (e avancuar)
     show_header_toggle: false
     state_color: false
     entities:
       - entity: sensor.fatos_total_bill_current_period
-        name: Дијагностика (атрибути)
+        name: Atributet diagnostikuese
         icon: mdi:bug
