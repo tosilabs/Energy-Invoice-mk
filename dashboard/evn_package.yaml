@@ -1,0 +1,111 @@
+# ============================================================
+#  EVN Macedonia — Home Assistant Package
+#  Vendos këtë skedar në: /config/packages/evn_energy.yaml
+#
+#  Pastaj shto në configuration.yaml:
+#    homeassistant:
+#      packages: !include_dir_named packages
+#
+#  Rinis HA — helpers dhe skriptet krijohen automatikisht.
+# ============================================================
+
+# ── HELPERS ──────────────────────────────────────────────────
+
+input_datetime:
+  evn_calc_start:
+    name: "EVN Kalkulator — Data fillimit"
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-start
+
+  evn_calc_end:
+    name: "EVN Kalkulator — Data mbarimit"
+    has_date: true
+    has_time: false
+    icon: mdi:calendar-end
+
+input_text:
+  evn_calc_result:
+    name: "EVN Kalkulator — Rezultati"
+    max: 255
+    icon: mdi:text-box-outline
+
+# ── SKRIPTET ─────────────────────────────────────────────────
+
+script:
+
+  evn_calculate_period:
+    alias: "EVN — Llogarit periudhën"
+    icon: mdi:calculator
+    sequence:
+      - action: energy_invoice_mk.calculate_period
+        data:
+          start_date: "{{ states('input_datetime.evn_calc_start') }}"
+          end_date:   "{{ states('input_datetime.evn_calc_end') }}"
+        response_variable: result
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.evn_calc_result
+        data:
+          value: >
+            VT: {{ result.vt_consumption | round(2) }} kWh |
+            NT: {{ result.nt_consumption | round(2) }} kWh |
+            Gjithsej: {{ result.total_consumption | round(2) }} kWh |
+            Fatura: {{ result.total_cost | round(2) }} MKD
+
+  evn_set_last_30_days:
+    alias: "EVN — Vendos 30 ditët e fundit"
+    icon: mdi:calendar-range
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.evn_calc_start
+        data:
+          date: "{{ (now() - timedelta(days=30)).strftime('%Y-%m-%d') }}"
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.evn_calc_end
+        data:
+          date: "{{ now().strftime('%Y-%m-%d') }}"
+
+  evn_set_previous_month:
+    alias: "EVN — Vendos muajin e kaluar"
+    icon: mdi:calendar-arrow-left
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.evn_calc_start
+        data:
+          date: >
+            {% if now().month == 1 %}
+              {{ now().year - 1 }}-12-01
+            {% else %}
+              {{ now().year }}-{{ '%02d' % (now().month - 1) }}-01
+            {% endif %}
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.evn_calc_end
+        data:
+          date: "{{ now().year }}-{{ '%02d' % now().month }}-01"
+
+  evn_set_this_year:
+    alias: "EVN — Vendos këtë vit"
+    icon: mdi:calendar-star
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.evn_calc_start
+        data:
+          date: "{{ now().year }}-01-01"
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.evn_calc_end
+        data:
+          date: "{{ now().strftime('%Y-%m-%d') }}"
+
+  evn_close_billing_period:
+    alias: "EVN — Mbyll periudhën e faturimit"
+    icon: mdi:calendar-check
+    sequence:
+      - action: energy_invoice_mk.close_billing_period
+        data: {}
